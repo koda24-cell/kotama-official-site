@@ -16,29 +16,35 @@ concurrency:
 
 jobs:
   deploy:
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Validate site files
+        shell: bash
         run: |
+          set -euo pipefail
           test -s index.html
           test -s site-config.js
-          test -s assets/イラスト128.1.png
-          test -s assets/イラスト128.2.png
-          test -s assets/イラスト128.3.png
-          test -s assets/characters/kishi.png
-          test -s assets/characters/hi-ra-.png
-          test -s assets/characters/sennshi.png
+          for image in             "assets/イラスト128.1.png"             "assets/イラスト128.2.png"             "assets/イラスト128.3.png"             "assets/characters/kishi.png"             "assets/characters/hi-ra-.png"             "assets/characters/sennshi.png"; do
+            test -s "$image" || { echo "::error::Missing or empty: $image"; exit 1; }
+          done
+      - name: Prepare deployment directory
+        shell: bash
+        run: |
+          mkdir -p _site
+          cp index.html site-config.js _site/
+          cp -R assets _site/
+          touch _site/.nojekyll
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload website artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
